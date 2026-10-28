@@ -15,10 +15,10 @@ test('create, join, merge edits, SSE and durable storage',async()=>{
  assert.equal(create.status,201);const room=await create.json();assert.equal(room.code.length,16);
  const join=await (await fetch(`${base}/api/rooms/${room.code}`)).json();assert.equal(join.project.title,'Live demo');
  const eventRes=await fetch(`${base}/api/rooms/${room.code}/events`);assert.ok(eventRes.headers.get('content-type').includes('text/event-stream'));
- const changes=await fetch(`${base}/api/rooms/${room.code}/changes`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ops:[{action:'set',level:'hazard',field:'title',value:'Engine failure'}],clientId:'tester'})});
+ const changes=await fetch(`${base}/api/rooms/${room.code}/changes`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ops:[{action:'set',level:'hazard',field:'title',before:'A',value:'Engine failure'}],clientId:'tester',changeId:'change-1'})});
  assert.equal(changes.status,200);const updated=await changes.json();assert.equal(updated.project.hazard.title,'Engine failure');
  const body=await (await fetch(`${base}/api/rooms/${room.code}`)).json();assert.equal(body.project.hazard.title,'Engine failure');
- const saved=JSON.parse(fs.readFileSync(path.join(tmp,room.code+'.json'),'utf8'));assert.equal(saved.project.hazard.title,'Engine failure');
+ const {DatabaseSync}=require('node:sqlite');const db=new DatabaseSync(path.join(tmp,'bowtie-together.sqlite'));const saved=db.prepare('SELECT * FROM rooms WHERE code=?').get(room.code);assert.equal(JSON.parse(saved.project).hazard.title,'Engine failure');db.close();
  const reader=eventRes.body.getReader();let streamed='';
  for(let n=0;n<8&&!streamed.includes('Engine failure');n++){
   const result=await Promise.race([reader.read(),sleep(1500).then(()=>{throw Error('SSE update timed out');})]);

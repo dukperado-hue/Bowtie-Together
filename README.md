@@ -1,105 +1,103 @@
-# Bowtie Together — Collaborative BowTie Risk Analysis
+# Bowtie Together — Collaborative BowTie Analysis
 
-**Version:** 1.0.0 · **Based on:** Bowtie888 v1.7.0 · **Stack:** HTML, CSS, JavaScript, Node.js (built-in modules only)
+**Release:** 1.1.0 (28 October 2026)  
+**Independent project:** based on Bowtie888 v1.7.0, with its **own** Git history and tags.  
+**Stack:** HTML, CSS, vanilla JavaScript, Node.js 22.16+, built-in SQLite, HTTP + Server-Sent Events (SSE).
 
-An independent, bilingual (English/Thai) collaborative edition of Bowtie888. Create a shared BowTie, invite team members using a 16-character code or link, and edit the same risk analysis in real time.
+> **Release status: collaboration reliability upgrade, not certified production software.** Access is protected only by possession of the room code. For confidential or regulated aviation safety records, add user authentication, roles, access revocation, operational monitoring and independent security review before deployment. See `docs/ARCHITECTURE_AND_READINESS.md`.
 
-## Features
+## What the app does
 
-- Original Bowtie888 professional editor, five themes, responsive diagram, risk matrix (1–5 × A–E), automatic element numbers, escalation factors and controls, PDF, JSON import/export.
-- Private analyses remain in the browser; shared rooms are saved by the server.
-- **Create live room** for the currently selected BowTie; **Join room** by typing a code or opening a `#room=...` invitation link.
-- Real-time fan-out via Server-Sent Events (SSE) and HTTP change requests; no third-party runtime dependencies.
-- Independent changes to *different* elements/fields are merged by stable IDs, reducing lost edits during simultaneous work. A conflicting change to the *same field* is last-write-wins.
-- Offline edits queue for retry while the tab remains open; the room reconnects automatically. Do not rely on offline queues as a backup: also export JSON.
-- Room member count, automatic browser reconnection, retained drafts, and JSON file storage on the backend.
+- Keep Bowtie888's interactive editor: numbered hazards/top events/threats/consequences, preventive and recovery barriers, escalation factors and controls, connector layout, initial and residual 5×5 risk assessments, risk matrix, PDF/JSON export, Thai/English, themes and responsive sidebar.
+- **Create a shared room** for the active BowTie. The server returns a random 16-character code; anyone with that code or a shared invitation link can **view and edit** the room. Keep codes private.
+- **Join a shared room** in another browser. Other connected editors see additions and edits through SSE, without manually refreshing.
+- **Presence** displays online count, name initials and individual connection state. Participants can enter a display name (not a verified identity).
+- **Automatic server persistence:** commits and full revision snapshots are written in SQLite transactions, with WAL journaling. Every successfully committed change has a monotonically increasing revision.
+- **Avoid lost edits:** independent changes to different fields/entities (including initial vs residual risk) can coexist. If two editors change the same field from an old value, the second request returns **409 Conflict**. The affected browser shows **Keep my changes / Use team changes**, instead of silently discarding a choice.
+- **Resilient retries:** changes have per-tab client IDs and per-change IDs. The server durably recognises replays and won't apply the same request twice. Pending edits are saved locally and re-applied on the same tab after a refresh/reconnect. Leaving a shared room is blocked while edits remain pending.
+- Read-only history metadata endpoint `GET /api/rooms/:code/history` (30 most recent revisions); full historical snapshots are stored in SQLite for later administration/recovery tooling.
 
-## Quick start (local computer)
+## Run locally
 
-Install Node.js 20+ and run:
+Install **Node.js 22.16+** (Node 22's built-in `node:sqlite` API is experimental and may warn at startup; pin the tested Node runtime).
 
 ```bash
 npm start
 ```
 
-Open **http://localhost:3000** in two tabs or computers able to reach that server. Press **Collaborate → Create live room** in the first browser and give your teammate the code. In the other browser press **Collaborate → Join room**. Each change is persisted to the server and broadcast to participants.
-
-Run automated tests:
+Visit `http://localhost:3000` and create a room with **Collaborate → Create live room**. Open the invitation link in a different browser to join the same analysis. To test across computers, make your backend accessible on your LAN over a trusted connection; public use should be HTTPS.
 
 ```bash
 npm test
+# Optional browser integration tests, if Chromium/Playwright is available:
+# PORT=38151 npm start
+# python tests/browser_collaboration.py
 ```
 
-## Deploy to a website
+`npm test` runs server API/SQLite tests and merge-engine parity tests without downloading packages. The images under `docs/previews/` are archived **v1.0.0 previews**, not new screenshots of the v1.1.0 collaboration controls. The Playwright test is **optional** and requires Python Playwright plus a working Chromium executable/browser networking. Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` if necessary. Its coverage is not implied by `npm test`.
 
-### Recommended: one Node server
+## Hosting: all-in-one Node + persistent storage
 
-Deploy this repository to a Node.js host (a VPS, Railway, Render with persistent disk, Fly.io or equivalent). Use:
+You can deploy this project to a single persistent Node service (VPS, Railway, Render with a mounted disk, Fly.io with persistent volume, etc.).
 
-- Install/build: none (no external npm dependencies)
-- Start command: `npm start`
-- Service port: environment variable `PORT` (defaults to 3000)
-- Data path: set `BOWTIE_DATA_DIR=/app/data` or another **persistent mounted volume**. The default `data/` directory is only for local development. **Without a persistent disk, room data may disappear when the host restarts or redeploys.**
-- Serve over HTTPS with your hosting platform's reverse proxy.
-- Expose a **single running instance**; this reference implementation uses on-disk JSON files plus in-process SSE subscriptions. Multiple replicas need a shared database and pub/sub service.
+| Variable | Meaning |
+| --- | --- |
+| `PORT` | HTTP server port; default `3000` |
+| `BOWTIE_DATA_DIR` | **Persistent** directory for `bowtie-together.sqlite` and WAL; default `./data` |
+| `ALLOWED_ORIGIN` | Exact Netlify frontend origin, e.g. `https://your-site.netlify.app`; no trailing slash. Leave blank when frontend and API share one origin. |
 
-### Static frontend on Netlify + separate Node API
+Requirements: **one instance**, a writable persistent disk, HTTPS/reverse proxy, backup scheduling, health checks and a secured deployment account. Do **not** run multiple backend replicas: snapshots persist in SQLite but SSE notifications are only shared within one Node process. Do **not** put a live SQLite file on an ephemeral deployment filesystem or a shared NFS mount.
 
-Upload **only** `public/` to Netlify. Netlify cannot run this long-lived Node/SSE backend as static hosting. Deploy the **same repository** as a separate backend Node service. In `public/config.js`, set:
+Health check: `GET /health` (does not expose the database or room codes). Run `npm run backup` for an online-consistent SQLite snapshot; override the destination with `npm run backup -- /path/to/backup.sqlite`. Schedule backups and test restores on a separate machine. The backup destination must be outside publicly served `public/`.
 
-```js
-window.BOWTIE_TOGETHER_API = 'https://your-node-backend.example.com';
-```
-
-On the backend set `ALLOWED_ORIGIN=https://your-netlify-site.netlify.app` (your actual frontend origin, no trailing slash). Deploy over HTTPS. The frontend and backend must remain reachable; all shared projects are saved on the backend.
-
-### Deploy with Docker
+### Docker
 
 ```bash
 docker compose up -d --build
 ```
 
-`docker-compose.yml` mounts a named persistent volume at `/app/data`.
+`docker-compose.yml` mounts a named persistent volume at `/app/data`. Keep backups separately from this volume. The repository's Dockerfile pins the Node 22 family; for strict repeatability, pin a tested image digest when promoting to production.
 
-## Files
+### Netlify static frontend + independent API
+
+1. Publish **`public/`** on Netlify (`netlify.toml` sets the publish directory). Netlify serves static HTML/CSS/JS, not the long-lived SSE and SQLite backend.
+2. Deploy the **same project** to a dedicated Node 22 service with a persistent volume for SQLite. Configure `PORT` and `BOWTIE_DATA_DIR` there.
+3. In Netlify's deployed `public/config.js`, set `window.BOWTIE_TOGETHER_API = 'https://api.your-domain.example'` (public URL only; **never** put credentials here).
+4. In your backend's environment variables set `ALLOWED_ORIGIN=https://your-site.netlify.app` (replace with the actual origin) and redeploy. Both URLs must use HTTPS. Configure the host/reverse proxy to leave `text/event-stream` unbuffered and support long connections.
+5. In two browsers, create/join a test room; check the online count, edit from both browsers, refresh and verify persistence. Do this **before** inviting users.
+
+A Netlify build is **not** a substitute for deploying the Node backend. Public hosting is **not** provided by this ZIP.
+
+## Upgrade from v1.0.0
+
+The first startup of v1.1.0 automatically imports valid `BOWTIE_DATA_DIR/ABCDEFGHIJKLMNOP.json` legacy rooms into SQLite, preserving the original room code and current revision. It **does not delete** the old JSON files, which can be kept as migration backups. Keep the whole data directory backed up before upgrading. After migration, the SQLite database is authoritative; do not edit the JSON files expecting changes to appear in the app. Room codes and invite links are unchanged.
+
+## Key files
 
 ```
-public/
-  index.html             Bowtie Together UI
-  styles.css             Desktop, tablet, phone and theme styles
-  app.js                 Original Bowtie888 analysis engine (adapted)
-  merge.js               Browser-side ID-based changeset engine
-  collab-client.js       Room management, sync and reconnection
-  config.js              Optional external backend address
-server/
-  index.js               HTTP API, static hosting, SSE and persistence
-  collaboration.js       Server-side change application/validation
- tests/                   Automated merge and HTTP/SSE tests
- data/                    Local room files (ignored by Git)
+public/index.html           BowTie editor and collaboration controls
+public/styles.css           All themes, desktop/tablet/mobile layout
+public/app.js               Preserved Bowtie888 editor, PDF/JSON and risk UI
+public/merge.js             Client-side ID operation/diff + conflict handling
+public/collab-client.js     SSE, retry queue, presence and conflict banner
+public/config.js            Public API base URL (not secrets)
+server/index.js             API, SSE and static asset serving
+server/collaboration.js     Server-side validation and optimistic concurrency
+server/store.js             SQLite WAL transactions, receipts and migration
+scripts/backup.js           Consistent SQLite backup helper
+tests/                     Unit, API, concurrency, parity and optional browser tests
+docs/ARCHITECTURE_AND_READINESS.md  Technical assessment and remaining blockers
 ```
 
-## How collaboration works
+## Security notes
 
-1. When a room is created, its snapshot is written to `BOWTIE_DATA_DIR/<ROOM_CODE>.json`.
-2. Each browser obtains the snapshot via `GET /api/rooms/:code` and listens to `GET /api/rooms/:code/events` (SSE).
-3. The editor emits changes to individual entities using stable IDs to `POST /api/rooms/:code/changes`.
-4. The server merges and saves each changeset and broadcasts the current authoritative project to every connected browser.
-5. Users can continue to export JSON and PDF exactly as in Bowtie888.
-
-**Conflict rule:** Concurrent changes to independent paths, barriers or fields are merged. If two people save different values to the *same field*, the latest received server update wins. This is a working collaboration MVP, **not** a CRDT/OT solution. For stronger conflict-free, keystroke-by-keystroke editing, introduce Yjs or another CRDT plus authentication, version history and auditing.
-
-## Security & operational limitations
-
-- **Possession of the 16-character code grants read and edit access.** This version has **no login, roles, access revocation or audit trail**. Do not use for classified, confidential, regulatory or production safety data until authentication, authorisation, monitoring and backups are added.
-- Room codes have ~80 bits of randomness and are not intended to be guessed; keep them secret. Invite links use URL fragments to avoid sending the room code to the page server as a URL path or query parameter.
-- HTTPS is strongly recommended for any public deployment. Set `ALLOWED_ORIGIN` when splitting frontend/backend. Configure reverse proxy request limits, backups, uptime monitoring and a trusted persistent storage volume.
-- Server storage is per room, no expiration or room deletion API. Restarting the server with a persistent disk retains room snapshots; without it they may be lost.
-- File-based storage and memory SSE subscriptions support a small collaborative group on a single server. For production/multi-node, use a database, authentication, audit logging, and shared event distribution.
+- **Code possession = read + write access.** Codes are randomly generated, but this alone is **not account authentication**, role-based permissions or revocation.
+- HTTPS is essential. Treat a room code like a password; do not put codes in public websites, screenshots or logs. Code links use `#room=...` browser fragments to reduce leakage from referral URLs.
+- The API enforces code formats, request limits, strict allowed changes, per-IP rate limiting and an optional CORS allowlist. **CORS is not authorisation**. Logging, administrator accounts, access controls, alerting, session management, automated backup retention, and managed multi-replica pub/sub remain future work.
+- Pending changes live in browser localStorage for recovery in the **same tab/session**; local copies and active editing sessions should be protected on shared computers. Export JSON regularly during pilot use.
+- Before using data to support real-world safety decisions, validate it through your organisation's authorised safety review and approval process. The app does not approve risk acceptance automatically.
 
 ## Version history
 
-- **v1.0.0 (28 Oct 2026)** First separate Bowtie Together collaborative project based on Bowtie888 v1.7.0.
-
-### Optional browser-level test
-
-Start the server with `npm start`; install Python Playwright (`pip install playwright` and `playwright install chromium`), then run `python tests/browser_collaboration.py`. It opens two independent browser contexts and verifies that edits appear across the room.
+- **v1.1.0** Transactional SQLite persistence, ID-based conflict review, idempotent retries, local pending-queue recovery, named presence, backup helper and concurrent-edit tests.
+- **v1.0.0** Initial separate collaborative Bowtie Together edition.

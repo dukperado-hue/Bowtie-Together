@@ -1,9 +1,9 @@
-import asyncio, json, pathlib
+import asyncio, json, pathlib, os
 from playwright.async_api import async_playwright
 URL='http://127.0.0.1:38151'
 async def main():
  async with async_playwright() as p:
-  browser=await p.chromium.launch(headless=True,args=['--no-sandbox'])
+  browser=await p.chromium.launch(headless=True,executable_path=os.environ.get('PLAYWRIGHT_CHROMIUM_EXECUTABLE') or None,args=['--no-sandbox'])
   a=await browser.new_context(viewport={'width':1440,'height':950})
   b=await browser.new_context(viewport={'width':1440,'height':950})
   p1=await a.new_page();p2=await b.new_page()

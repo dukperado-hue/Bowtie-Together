@@ -1,9 +1,7 @@
-# Bowtie Together · New chat handoff
+# Bowtie Together — Project handoff
 
-This is a **separate project** from Bowtie888, using Bowtie888 v1.7.0 as its starting UI/editor. It adds central real-time server collaboration with invitation codes, preserves Thai/English and the risk matrix, and maintains a separate Git version history.
+Independent project, not Bowtie888. Version v1.1.0 (28 October 2026), based on Bowtie888 v1.7.0 editor. Retain separate Git history and tags (`v1.0.0`, `v1.1.0`).
 
-In a new ChatGPT conversation, attach `Bowtie-Together-v1.0.0-Project.zip` and say:
+To continue work: attach the latest complete project ZIP with Git history. Read `README.md`, `docs/ARCHITECTURE_AND_READINESS.md`, and `CHANGELOG.md` before editing. Do not rebuild the editor, damage existing BowTie/PDF/JSON/language/theme features or claim browser testing without running it.
 
-> Continue developing Bowtie Together from this project archive. Keep this a separate product from Bowtie888. Preserve the realtime collaboration API, room-code invitations, original analysis features, bilingual UI and Git versioning. Make incremental versions and maintain CHANGELOG.md.
-
-Suggested next steps: proper user accounts, role-based permissions, audit trail, historical revisions/rollback, PostgreSQL storage, and authenticated room access before regulated production use.
+Priority next: account authentication and room roles, revoke/expiry for invites, secure identity-backed audit, multi-instance pub/sub if needed, unrestricted browser collaboration integration testing, and production operational safeguards.

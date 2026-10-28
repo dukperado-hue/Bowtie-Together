@@ -19,13 +19,13 @@
       <button class="side-nav active" id="navOverview"><span class="nav-icon">◈</span><span data-i18n="overview">Overview</span><span class="nav-shortcut">↗</span></button>
       <div class="projects-heading"><span class="side-label" data-i18n="myAnalyses">MY ANALYSES</span><button class="icon-btn side-plus" id="newProjectSide" data-tip="New analysis" aria-label="New analysis">+</button></div>
       <div class="project-list" id="projectList"></div>
-      <div class="sidebar-bottom"><div class="local-card"><div class="local-icon">⌁</div><strong data-i18n="yourDataStaysHere">Your data stays here</strong><p data-i18n="privacyDescription">Private analyses stay here; shared rooms sync through the server.</p></div><div class="sidebar-credit"><span class="sidebar-version">v1.0.0</span> Bowtie Together <span>·</span> <span data-i18n="offlineFirst">Local-first workspace</span></div></div>
+      <div class="sidebar-bottom"><div class="local-card"><div class="local-icon">⌁</div><strong data-i18n="yourDataStaysHere">Your data stays here</strong><p data-i18n="privacyDescription">Private analyses stay here; shared rooms sync through the server.</p></div><div class="sidebar-credit"><span class="sidebar-version">v1.1.0</span> Bowtie Together <span>·</span> <span data-i18n="offlineFirst">Local-first workspace</span></div></div>
     </aside>
 
     <main class="main-content">
       <header class="topbar">
         <div class="topbar-left"><button class="icon-btn mobile-menu sidebar-trigger" id="menuBtn" type="button" aria-controls="sidebar" aria-expanded="true" aria-label="Hide sidebar" title="Hide sidebar"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/><path class="sidebar-trigger-chevron" d="m15 10 2 2-2 2"/></svg></button><span class="breadcrumb" data-i18n="workspace">WORKSPACE</span><span class="bread-divider">/</span><span class="bread-current">Bowtie Together</span><span class="topbar-module-label" data-i18n="moduleLabel">ANALYSIS STUDIO</span></div>
-        <div class="topbar-right"><span class="live-status" id="liveStatus" data-status="local">Private · On this device</span><div class="autosave" id="saveIndicator"><span class="save-dot"></span><span data-i18n="allChangesSaved">All changes saved</span></div><div class="theme-picker" id="themePicker">
+        <div class="topbar-right"><div class="live-members" id="liveMembers" aria-label="Online participants" hidden></div><span class="live-status" id="liveStatus" data-status="local">Private · On this device</span><div class="autosave" id="saveIndicator"><span class="save-dot"></span><span data-i18n="allChangesSaved">All changes saved</span></div><div class="theme-picker" id="themePicker">
           <button class="theme-trigger" id="themeTrigger" type="button" aria-expanded="false" aria-haspopup="true" aria-controls="themeMenu" title="Appearance">
             <span class="theme-trigger-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2.5m0 15V22M4.93 4.93l1.77 1.77m10.6 10.6 1.77 1.77M2 12h2.5m15 0H22M4.93 19.07l1.77-1.77M17.3 6.7l1.77-1.77"/></svg></span>
             <span class="theme-trigger-text" data-i18n="appearance">Appearance</span>
@@ -73,6 +73,7 @@
     </main>
   </div>
   <div class="mobile-scrim" id="mobileScrim"></div>
+  <div class="live-conflict-bar" id="liveConflictBar" role="alert" hidden><span class="live-conflict-icon" aria-hidden="true">⚠</span><p id="liveConflictMessage">A teammate edited the same field. Choose which changes to keep.</p><div class="live-conflict-actions"><button type="button" class="btn primary" id="liveKeepMine">Keep my changes</button><button type="button" class="btn secondary" id="liveKeepTeam">Use team changes</button></div></div>
   <div class="drawer-scrim" id="drawerScrim"></div>
   <aside class="editor-drawer" id="editorDrawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true"><header class="drawer-header"><div><div class="section-label" id="drawerOverline">EDITOR</div><h2 id="drawerTitle">Edit item</h2></div><button class="close-drawer" id="closeDrawer" aria-label="Close">×</button></header><form id="editorForm"><div class="drawer-body" id="editorFields"></div><div class="drawer-footer"><button class="btn delete-btn" type="button" id="deleteItemButton"><span data-i18n="delete">Delete</span></button><div class="drawer-footer-right"><button class="btn secondary" type="button" id="cancelEditButton"><span data-i18n="cancel">Cancel</span></button><button class="btn primary" type="submit"><span data-i18n="saveChanges">Save changes</span></button></div></div></form></aside>
   <input type="file" id="jsonInput" accept=".json,application/json" hidden />
@@ -80,7 +81,7 @@
   <div class="live-modal" id="liveModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="liveHeading">
     <div class="live-backdrop" id="liveBackdrop"></div>
     <section class="live-window"><div class="live-window-head"><div class="live-window-mark">⌘</div><div><div class="section-label">REAL-TIME COLLABORATION</div><h2 id="liveHeading">Work together on this BowTie</h2></div></div>
-      <p class="live-subtitle" id="liveSubtitle">Share a code with your team to collaborate.</p>
+      <label class="live-name-label" id="liveNameLabel" for="liveYourName">Your display name</label><input type="text" class="live-name-input" id="liveYourName" maxlength="40" autocomplete="nickname"/><p class="live-subtitle" id="liveSubtitle">Share a code with your team to collaborate.</p>
       <div id="liveJoinPanel" class="live-join-panel"><div class="live-modal-actions"><button type="button" class="btn primary" id="liveCreate">Create live room</button></div>
         <div class="live-or"><span>OR JOIN AN EXISTING ROOM</span></div>
         <div class="live-code-row"><input id="liveAccessInput" autocomplete="off" autocapitalize="characters" maxlength="20" aria-label="Room code" placeholder="Enter invitation code"/><button class="btn secondary" id="liveJoin" type="button">Join room</button></div>

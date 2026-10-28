@@ -29,4 +29,4 @@ test('delete and escalation controls work',()=>{
  const b=applyOps(p,diffProject(p,a));assert.equal(b.consequences[0].barriers[0].escalationFactors[0].controls[0].title,'Control');
  const c=structuredClone(b);c.consequences=[];assert.equal(applyOps(b,diffProject(b,c)).consequences.length,0);
 });
-test('unknown fields are not accepted',()=>{const p=make();const changed=applyOps(p,[{action:'set',level:'project',field:'__proto__',value:{polluted:true}}]);assert.equal(changed.polluted,undefined);});
+test('unknown fields are rejected',()=>{const p=make();assert.throws(()=>applyOps(p,[{action:'set',level:'project',field:'__proto__',value:{polluted:true}}]));});
