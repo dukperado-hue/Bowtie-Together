@@ -1,0 +1,13 @@
+services:
+  bowtie-together:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - bowtie_data:/app/data
+    environment:
+      PORT: "3000"
+      BOWTIE_DATA_DIR: /app/data
+volumes:
+  bowtie_data:
