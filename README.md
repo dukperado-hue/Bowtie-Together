@@ -1,5 +1,6 @@
 # Bowtie Together — Collaborative BowTie Analysis
 
+**Website:** <https://coolunclelab.com/bowtie-together/>  
 **Release:** 1.1.0 (28 October 2026)  
 **Independent project:** based on Bowtie888 v1.7.0, with its **own** Git history and tags.  
 **Stack:** HTML, CSS, vanilla JavaScript, Node.js 22.16+, built-in SQLite, HTTP + Server-Sent Events (SSE).
